@@ -1,0 +1,132 @@
+# 올리브영 세일 시스템 - 로컬 개발 환경
+# docker-compose up -d 로 실행
+
+version: '3.8'
+
+services:
+  # ============================================
+  # 백엔드 API 서버
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: oliveyoung-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - oliveyoung-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ============================================
+  # Redis (세일 상태 + 대기열)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: oliveyoung-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - oliveyoung-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ============================================
+  # 프론트엔드 (개발 서버)
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: oliveyoung-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://backend:8080
+    depends_on:
+      - backend
+    networks:
+      - oliveyoung-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  # ============================================
+  # MySQL (프로덕션 환경 시뮬레이션용 - 선택적)
+  # ============================================
+  mysql:
+    image: mysql:8.0
+    container_name: oliveyoung-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=oliveyoung
+      - MYSQL_USER=oliveyoung
+      - MYSQL_PASSWORD=oliveyoung123
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - oliveyoung-network
+    profiles:
+      - full  # docker-compose --profile full up 으로 실행 시에만
+
+  # ============================================
+  # Prometheus (모니터링 - 선택적)
+  # ============================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: oliveyoung-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - oliveyoung-network
+    profiles:
+      - monitoring
+
+  # ============================================
+  # Grafana (대시보드 - 선택적)
+  # ============================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: oliveyoung-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - oliveyoung-network
+    profiles:
+      - monitoring
+
+networks:
+  oliveyoung-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  mysql-data:
+  grafana-data:
