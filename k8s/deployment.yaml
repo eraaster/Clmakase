@@ -6,7 +6,7 @@ metadata:
   labels:
     app: oliveyoung-api
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: oliveyoung-api
@@ -29,6 +29,8 @@ spec:
               value: "local"
             - name: REDIS_HOST
               value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
           resources:
             requests:
               cpu: 250m
