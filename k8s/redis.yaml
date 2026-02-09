@@ -33,7 +33,7 @@ metadata:
   namespace: oliveyoung
 spec:
   selector:
-    app: redis
+    app: oliveyoung-redis
   ports:
     - port: 6379
       targetPort: 6379
