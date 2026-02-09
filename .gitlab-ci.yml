@@ -16,7 +16,7 @@ variables:
   IMAGE_TAG: $CI_COMMIT_SHORT_SHA
 
 # ------------------------------------------------------------------------------
-# Build Stage: Docker 이미지 빌드 → ECR Push
+# Build Stage: Docker 이미지 빌드 → ECR Push!
 # ------------------------------------------------------------------------------
 build:
   stage: build
