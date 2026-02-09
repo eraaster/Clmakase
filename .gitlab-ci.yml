@@ -1,0 +1,56 @@
+################################################################################
+# GitLab CI/CD Pipeline
+# CJ Oliveyoung - Backend API
+#
+# Flow: GitLab Push → Docker Build → ECR Push → K8s 매니페스트 이미지 태그 업데이트
+################################################################################
+
+stages:
+  - build
+  - deploy
+
+variables:
+  AWS_REGION: ap-northeast-2
+  ECR_REGISTRY: 160884802838.dkr.ecr.ap-northeast-2.amazonaws.com
+  ECR_REPOSITORY: oliveyoung-api
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+
+# ------------------------------------------------------------------------------
+# Build Stage: Docker 이미지 빌드 → ECR Push
+# ------------------------------------------------------------------------------
+build:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - apk add --no-cache aws-cli
+    - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+  script:
+    - cd backend
+    - docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+    - docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+    - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+    - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+  only:
+    - main
+
+# ------------------------------------------------------------------------------
+# Deploy Stage: K8s 매니페스트의 이미지 태그 업데이트 (ArgoCD가 감지)
+# ------------------------------------------------------------------------------
+deploy:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git sed
+    - git config user.email "ci@gitlab.com"
+    - git config user.name "GitLab CI"
+  script:
+    - sed -i "s|image:.*oliveyoung-api.*|image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}|" k8s/deployment.yaml
+    - git add k8s/deployment.yaml
+    - git commit -m "chore: update image tag to ${IMAGE_TAG}"
+    - git push https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:main
+  only:
+    - main

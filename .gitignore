@@ -1,0 +1,27 @@
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+*.tfplan
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+nul
+Thumbs.db
+
+# Node
+node_modules/
+
+# Java
+build/
+*.jar
+*.class
+
+# Env
+.env
+*.pem
