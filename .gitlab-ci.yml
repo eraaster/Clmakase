@@ -2,12 +2,11 @@
 # GitLab CI/CD Pipeline
 # CJ Oliveyoung - Backend API
 #
-# Flow: GitLab Push → Docker Build → ECR Push → K8s 매니페스트 이미지 태그 업데이트
+# Flow: GitLab Push → Docker Build → ECR Push → ArgoCD 자동 배포
 ################################################################################
 
 stages:
   - build
-  - deploy
 
 variables:
   AWS_REGION: ap-northeast-2
@@ -17,6 +16,7 @@ variables:
 
 # ------------------------------------------------------------------------------
 # Build Stage: Docker 이미지 빌드 → ECR Push
+# ArgoCD가 k8s/deployment.yaml의 latest 태그를 감지하여 자동 배포
 # ------------------------------------------------------------------------------
 build:
   stage: build
@@ -31,26 +31,8 @@ build:
   script:
     - cd backend
     - docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-    - docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+    - docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-  only:
-    - main
-
-# ------------------------------------------------------------------------------
-# Deploy Stage: K8s 매니페스트의 이미지 태그 업데이트 (ArgoCD가 감지)
-# ------------------------------------------------------------------------------
-deploy:
-  stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache git sed
-    - git config user.email "ci@gitlab.com"
-    - git config user.name "GitLab CI"
-  script:
-    - 'sed -i "s|image:.*oliveyoung-api.*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|" k8s/deployment.yaml'
-    - git add k8s/deployment.yaml
-    - 'git commit -m "chore: update image tag to $IMAGE_TAG [skip ci]"'
-    - 'git push https://gitlab-ci-token:$CI_JOB_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git HEAD:main'
   only:
     - main

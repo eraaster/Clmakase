@@ -19,7 +19,8 @@
       "Bash(git add:*)",
       "Bash(git reset:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add CI/CD pipeline, K8s manifests, and Terraform IaC\n\n- .gitlab-ci.yml: GitLab CI → Docker Build → ECR Push\n- k8s/: EKS deployment, service, namespace, ArgoCD app\n- terraform/: VPC, Security Groups, ECR modules\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
