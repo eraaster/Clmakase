@@ -26,33 +26,7 @@ spec:
             - containerPort: 8080
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "prod"
-            - name: DB_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: oliveyoung-db-secret
-                  key: host
-            - name: DB_PORT
-              value: "3306"
-            - name: DB_NAME
-              value: "oliveyoung"
-            - name: DB_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: oliveyoung-db-secret
-                  key: username
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: oliveyoung-db-secret
-                  key: password
-            - name: REDIS_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: oliveyoung-redis-secret
-                  key: host
-            - name: REDIS_PORT
-              value: "6379"
+              value: "local"
           resources:
             requests:
               cpu: 250m
