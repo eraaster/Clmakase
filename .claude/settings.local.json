@@ -5,7 +5,21 @@
       "Bash(docker logs:*)",
       "Bash(curl:*)",
       "Bash(docker-compose down:*)",
-      "Bash(docker-compose up:*)"
+      "Bash(docker-compose up:*)",
+      "Bash(terraform:*)",
+      "Bash(aws:*)",
+      "Bash(helm version:*)",
+      "Bash(kubectl get:*)",
+      "Bash(kubectl create:*)",
+      "Bash(kubectl apply:*)",
+      "Bash(kubectl wait:*)",
+      "Bash(kubectl:*)",
+      "Bash(git -C C:/Users/KDT49/Clmakase remote:*)",
+      "Bash(git -C C:/Users/KDT49/Clmakase status --short)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add CI/CD pipeline, K8s manifests, and Terraform IaC\n\n- .gitlab-ci.yml: GitLab CI → Docker Build → ECR Push\n- k8s/: EKS deployment, service, namespace, ArgoCD app\n- terraform/: VPC, Security Groups, ECR modules\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)"
     ]
   }
 }

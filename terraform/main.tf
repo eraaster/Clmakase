@@ -3,7 +3,7 @@
 # CJ Oliveyoung CloudWave Infrastructure
 #
 # Phase 1: VPC + Security Groups + ECR
-# Phase 2: EKS (AWS Console에서 수동 생성)!
+# Phase 2: EKS (AWS Console에서 수동 생성)!!
 ################################################################################
 
 terraform {
