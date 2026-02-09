@@ -15,9 +15,6 @@ variables:
   ECR_REPOSITORY: oliveyoung-api
   IMAGE_TAG: $CI_COMMIT_SHORT_SHA
 
-# ------------------------------------------------------------------------------
-# Build Stage: Docker 이미지 빌드 → ECR Push!
-# ------------------------------------------------------------------------------
 build:
   stage: build
   image: docker:24-dind
@@ -37,20 +34,20 @@ build:
   only:
     - main
 
-# ------------------------------------------------------------------------------
-# Deploy Stage: K8s 매니페스트의 이미지 태그 업데이트 (ArgoCD가 감지)
-# ------------------------------------------------------------------------------
 deploy:
   stage: deploy
   image: alpine:latest
   before_script:
     - apk add --no-cache git sed
-    - git config user.email "ci@gitlab.com"
-    - git config user.name "GitLab CI"
+    - git config --global user.email "ci@gitlab.com"
+    - git config --global user.name "GitLab CI"
   script:
-    - sed -i "s|image:.*oliveyoung-api.*|image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}|" k8s/deployment.yaml
+    # 1. 이미지 태그 업데이트
+    - sed -i "s|image:.*${ECR_REPOSITORY}.*|image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}|" k8s/deployment.yaml
+    # 2. 변경사항 커밋
     - git add k8s/deployment.yaml
     - git commit -m "chore: update image tag to ${IMAGE_TAG} [skip ci]"
-    - git push https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:main
+    # 3. 토큰을 이용한 인증 및 Push (가장 중요)
+    - git push https://oauth2:${GITLAB_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:main
   only:
     - main
