@@ -27,6 +27,8 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "local"
+            - name: REDIS_HOST
+              value: "redis"
           resources:
             requests:
               cpu: 250m
