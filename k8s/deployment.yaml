@@ -28,9 +28,7 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: "local"
             - name: REDIS_HOST
-              value: "redis"
-            - name: REDIS_PORT
-              value: "6379"
+              value: "oliveyoung-redis"
           resources:
             requests:
               cpu: 250m
