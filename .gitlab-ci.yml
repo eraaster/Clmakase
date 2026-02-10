@@ -2,17 +2,43 @@
 # GitLab CI/CD Pipeline
 # CJ Oliveyoung - Backend API
 #
-# Flow: GitLab Push → Docker Build → ECR Push → ArgoCD 자동 배포
+# Flow: Test → Build → Scan → (Manual) Load Test
+#       GitLab Push → JUnit 테스트 → Docker Build → ECR Push
+#       → Trivy 보안 스캔 → ArgoCD 자동 배포
 ################################################################################
 
 stages:
+  - test
   - build
+  - scan
+  - load-test
 
 variables:
   AWS_REGION: ap-northeast-2
   ECR_REGISTRY: 160884802838.dkr.ecr.ap-northeast-2.amazonaws.com
   ECR_REPOSITORY: oliveyoung-api
   IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+
+# ------------------------------------------------------------------------------
+# Test Stage: JUnit 단위 테스트
+# 테스트 실패 시 빌드/배포 차단
+# ------------------------------------------------------------------------------
+test:
+  stage: test
+  image: gradle:8.5-jdk17
+  script:
+    - cd backend
+    - gradle test --no-daemon
+  artifacts:
+    when: always
+    reports:
+      junit: backend/build/test-results/test/*.xml
+    paths:
+      - backend/build/reports/tests/
+    expire_in: 7 days
+  only:
+    - main
+    - merge_requests
 
 # ------------------------------------------------------------------------------
 # Build Stage: Docker 이미지 빌드 → ECR Push
@@ -34,5 +60,56 @@ build:
     - docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
     - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+  only:
+    - main
+
+# ------------------------------------------------------------------------------
+# Scan Stage: Trivy 이미지 보안 스캔
+# ECR에 Push된 이미지의 CVE 취약점 검사
+# CRITICAL 취약점 발견 시 리포트 생성 (allow_failure로 배포는 차단 안 함)
+# ------------------------------------------------------------------------------
+trivy-scan:
+  stage: scan
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - apk add --no-cache aws-cli curl
+    - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+    - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+  script:
+    - docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+    - trivy image --exit-code 0 --severity HIGH,CRITICAL --format table $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+    - trivy image --exit-code 1 --severity CRITICAL --format json --output trivy-report.json $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG || true
+  artifacts:
+    when: always
+    paths:
+      - trivy-report.json
+    expire_in: 30 days
+  allow_failure: true
+  only:
+    - main
+
+# ------------------------------------------------------------------------------
+# Load Test Stage: k6 부하 테스트 (수동 트리거)
+# 세일 이벤트 트래픽 시뮬레이션
+# ------------------------------------------------------------------------------
+load-test:
+  stage: load-test
+  image:
+    name: grafana/k6:latest
+    entrypoint: [""]
+  script:
+    - k6 run k6/load-test.js
+  variables:
+    BASE_URL: "http://localhost:8080"
+  artifacts:
+    when: always
+    paths:
+      - k6-summary.json
+    expire_in: 7 days
+  when: manual
   only:
     - main
