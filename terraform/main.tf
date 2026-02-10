@@ -2,7 +2,7 @@
 # Root Module - Main
 # CJ Oliveyoung CloudWave Infrastructure
 #
-# Phase 1: VPC + Security Groups + ECR
+# Phase 1: VPC + Security Groups + ECR + RDS (Aurora MySQL)
 # Phase 2: EKS (AWS Console에서 수동 생성)!!
 ################################################################################
 
@@ -77,4 +77,21 @@ module "ecr" {
   repository_name     = var.ecr_repository_name
   image_count_to_keep = 10
   common_tags         = local.common_tags
+}
+
+# ------------------------------------------------------------------------------
+# RDS Module (Aurora MySQL)
+# ------------------------------------------------------------------------------
+module "rds" {
+  source = "./modules/rds"
+
+  project_name       = var.project_name
+  environment        = var.environment
+  private_subnet_ids = module.vpc.private_subnet_ids
+  rds_sg_id          = module.security_groups.rds_sg_id
+  database_name      = "oliveyoung"
+  master_username    = "admin"
+  master_password    = var.db_password
+  instance_class     = "db.t3.medium"
+  common_tags        = local.common_tags
 }

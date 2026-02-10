@@ -56,3 +56,9 @@ variable "ecr_repository_name" {
   type        = string
   default     = "oliveyoung-api"
 }
+
+variable "db_password" {
+  description = "Aurora MySQL master password"
+  type        = string
+  sensitive   = true
+}

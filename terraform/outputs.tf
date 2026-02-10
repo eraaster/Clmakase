@@ -56,6 +56,22 @@ output "ecr_repository_name" {
   value       = module.ecr.repository_name
 }
 
+# --- RDS (Aurora MySQL) ---
+output "rds_cluster_endpoint" {
+  description = "Aurora MySQL Writer Endpoint"
+  value       = module.rds.cluster_endpoint
+}
+
+output "rds_reader_endpoint" {
+  description = "Aurora MySQL Reader Endpoint"
+  value       = module.rds.reader_endpoint
+}
+
+output "rds_database_name" {
+  description = "Database name"
+  value       = module.rds.database_name
+}
+
 # --- EKS 콘솔 생성 시 필요한 정보 요약 ---
 output "eks_console_info" {
   description = "AWS Console에서 EKS 생성 시 필요한 정보"

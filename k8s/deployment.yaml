@@ -7,6 +7,7 @@ metadata:
     app: oliveyoung-api
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: oliveyoung-api
@@ -26,9 +27,25 @@ spec:
             - containerPort: 8080
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "local"
+              value: "prod"
             - name: REDIS_HOST
               value: "oliveyoung-redis"
+            - name: DB_HOST
+              value: "PLACEHOLDER_AURORA_ENDPOINT"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: "oliveyoung"
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: oliveyoung-db-secret
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oliveyoung-db-secret
+                  key: DB_PASSWORD
           resources:
             requests:
               cpu: 250m

@@ -19,3 +19,6 @@ cluster_name = "cloudwave-eks"
 
 # ECR
 ecr_repository_name = "oliveyoung-api"
+
+# RDS (Aurora MySQL)
+db_password = "CloudWave2026!"
