@@ -31,7 +31,7 @@ spec:
             - name: REDIS_HOST
               value: "oliveyoung-redis"
             - name: DB_HOST
-              value: "PLACEHOLDER_AURORA_ENDPOINT"
+              value: "cloudwave-dev-aurora.cluster-chqm4ig82r3p.ap-northeast-2.rds.amazonaws.com"
             - name: DB_PORT
               value: "3306"
             - name: DB_NAME
