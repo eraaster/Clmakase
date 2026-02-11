@@ -16,9 +16,25 @@ spec:
       labels:
         app: oliveyoung-api
       annotations:
+        # --- Prometheus ---
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
         prometheus.io/path: "/actuator/prometheus"
+        # --- Datadog APM (트레이스 자동 주입) ---
+        admission.datadoghq.com/java-lib.version: "latest"
+        # --- Datadog 로그 수집 ---
+        ad.datadoghq.com/oliveyoung-api.logs: '[{"source": "java", "service": "oliveyoung-api"}]'
+        # --- Datadog 메트릭 수집 (Actuator Prometheus endpoint) ---
+        ad.datadoghq.com/oliveyoung-api.check_names: '["openmetrics"]'
+        ad.datadoghq.com/oliveyoung-api.init_configs: '[{}]'
+        ad.datadoghq.com/oliveyoung-api.instances: |
+          [
+            {
+              "prometheus_url": "http://%%host%%:8080/actuator/prometheus",
+              "namespace": "spring_boot",
+              "metrics": ["*"]
+            }
+          ]
     spec:
       containers:
         - name: oliveyoung-api
