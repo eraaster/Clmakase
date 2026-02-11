@@ -14,6 +14,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -91,7 +95,7 @@ module "rds" {
   rds_sg_id          = module.security_groups.rds_sg_id
   database_name      = "oliveyoung"
   master_username    = "admin"
-  master_password    = var.db_password
+  # master_password는 random_password로 자동 생성 → ASM에 보관
   instance_class     = "db.t3.medium"
   common_tags        = local.common_tags
 }

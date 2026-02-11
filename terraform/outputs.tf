@@ -72,6 +72,17 @@ output "rds_database_name" {
   value       = module.rds.database_name
 }
 
+# --- ASM (Secrets Manager) ---
+output "rds_secret_arn" {
+  description = "Secrets Manager ARN (DB 비밀번호)"
+  value       = module.rds.db_secret_arn
+}
+
+output "rds_secret_name" {
+  description = "Secrets Manager Name (DB 비밀번호)"
+  value       = module.rds.db_secret_name
+}
+
 # --- EKS 콘솔 생성 시 필요한 정보 요약 ---
 output "eks_console_info" {
   description = "AWS Console에서 EKS 생성 시 필요한 정보"

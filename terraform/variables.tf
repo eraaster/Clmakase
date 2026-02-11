@@ -57,8 +57,5 @@ variable "ecr_repository_name" {
   default     = "oliveyoung-api"
 }
 
-variable "db_password" {
-  description = "Aurora MySQL master password"
-  type        = string
-  sensitive   = true
-}
+## db_password 제거됨
+## 비밀번호는 modules/rds에서 random_password로 자동 생성 → ASM에 보관

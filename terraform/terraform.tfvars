@@ -21,4 +21,4 @@ cluster_name = "cloudwave-eks"
 ecr_repository_name = "oliveyoung-api"
 
 # RDS (Aurora MySQL)
-db_password = "CloudWave2026!"
+# db_password 제거 - random_password 자동 생성 → ASM에 보관
