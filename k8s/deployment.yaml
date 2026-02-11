@@ -5,6 +5,9 @@ metadata:
   namespace: oliveyoung
   labels:
     app: oliveyoung-api
+    tags.datadoghq.com/env: "prod"
+    tags.datadoghq.com/service: "oliveyoung-api"
+    tags.datadoghq.com/version: "1.0.0"
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -15,6 +18,9 @@ spec:
     metadata:
       labels:
         app: oliveyoung-api
+        tags.datadoghq.com/env: "prod"
+        tags.datadoghq.com/service: "oliveyoung-api"
+        tags.datadoghq.com/version: "1.0.0"
       annotations:
         # --- Prometheus ---
         prometheus.io/scrape: "true"
@@ -24,7 +30,7 @@ spec:
         admission.datadoghq.com/java-lib.version: "latest"
         # --- Datadog 로그 수집 ---
         ad.datadoghq.com/oliveyoung-api.logs: '[{"source": "java", "service": "oliveyoung-api"}]'
-        # --- Datadog 메트릭 수집 (Actuator Prometheus endpoint) ---
+        # --- Datadog 메트릭 수집 ---
         ad.datadoghq.com/oliveyoung-api.check_names: '["openmetrics"]'
         ad.datadoghq.com/oliveyoung-api.init_configs: '[{}]'
         ad.datadoghq.com/oliveyoung-api.instances: |
@@ -42,6 +48,18 @@ spec:
           ports:
             - containerPort: 8080
           env:
+            # --- Datadog 필수 태그 및 연결 설정 ---
+            - name: DD_SERVICE
+              value: "oliveyoung-api"
+            - name: DD_ENV
+              value: "prod"
+            - name: DD_VERSION
+              value: "1.0.0"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_PROFILING_ENABLED
+              value: "true"
+            # --- Spring Boot ---
             - name: SPRING_PROFILES_ACTIVE
               value: "prod"
             - name: REDIS_HOST
