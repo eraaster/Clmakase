@@ -97,5 +97,6 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8080
+              ##test
             initialDelaySeconds: 90
             periodSeconds: 15
