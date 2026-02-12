@@ -13,9 +13,9 @@ metadata:
     # 인터넷 접근 가능한 ALB
     alb.ingress.kubernetes.io/scheme: internet-facing
     # Terraform으로 만든 ALB SG 사용
-    alb.ingress.kubernetes.io/security-groups: sg-0d0608c0433800e13
+    alb.ingress.kubernetes.io/security-groups: sg-098d06fcde9775a5f
     # Public Subnet에 ALB 배치
-    alb.ingress.kubernetes.io/subnets: subnet-0c66a8c8b31eff78f,subnet-073f61179acc52241
+    alb.ingress.kubernetes.io/subnets: subnet-02f805ea459fb5d5f,subnet-09c999e3633cc5ee8
     # Target Type: IP (Pod에 직접 트래픽 전달)
     alb.ingress.kubernetes.io/target-type: ip
     # Health Check 설정
