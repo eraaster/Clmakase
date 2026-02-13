@@ -59,3 +59,9 @@ variable "ecr_repository_name" {
 
 ## db_password 제거됨
 ## 비밀번호는 modules/rds에서 random_password로 자동 생성 → ASM에 보관
+
+variable "domain_name" {
+  description = "커스텀 도메인 이름 (Route53 + ACM + CloudFront)"
+  type        = string
+  default     = "clmakase.click"
+}

@@ -22,3 +22,6 @@ ecr_repository_name = "oliveyoung-api"
 
 # RDS (Aurora MySQL)
 # db_password 제거 - random_password 자동 생성 → ASM에 보관
+
+# Domain (Route53 + ACM + CloudFront)
+domain_name = "clmakase.click"

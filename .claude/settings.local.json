@@ -27,7 +27,9 @@
       "Bash(gradle test:*)",
       "Bash(ls:*)",
       "Bash(docker run:*)",
-      "Bash(MSYS_NO_PATHCONV=1 docker run:*)"
+      "Bash(MSYS_NO_PATHCONV=1 docker run:*)",
+      "Bash(dir \"C:\\\\Users\\\\KDT49\\\\Clmakase\\\\terraform\\\\modules\")",
+      "Bash(dir:*)"
     ]
   }
 }

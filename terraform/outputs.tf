@@ -83,6 +83,72 @@ output "rds_secret_name" {
   value       = module.rds.db_secret_name
 }
 
+# --- WAF ---
+output "waf_web_acl_arn" {
+  description = "WAF Web ACL ARN (CloudFront 연동용)"
+  value       = module.waf.web_acl_arn
+}
+
+output "waf_web_acl_id" {
+  description = "WAF Web ACL ID"
+  value       = module.waf.web_acl_id
+}
+
+# --- KMS ---
+output "kms_key_arn" {
+  description = "KMS 키 ARN (S3 암호화용)"
+  value       = module.kms.key_arn
+}
+
+output "kms_key_id" {
+  description = "KMS 키 ID"
+  value       = module.kms.key_id
+}
+
+# --- S3 ---
+output "s3_bucket_id" {
+  description = "S3 정적 자산 버킷 ID"
+  value       = module.s3.bucket_id
+}
+
+output "s3_bucket_domain_name" {
+  description = "S3 Regional Domain Name"
+  value       = module.s3.bucket_regional_domain_name
+}
+
+# --- CloudFront ---
+output "cloudfront_domain_name" {
+  description = "CloudFront 배포 도메인 (Route53 연동용)"
+  value       = module.cloudfront.cloudfront_domain_name
+}
+
+output "cloudfront_arn" {
+  description = "CloudFront 배포 ARN"
+  value       = module.cloudfront.cloudfront_arn
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront Distribution ID"
+  value       = module.cloudfront.cloudfront_distribution_id
+}
+
+# --- Route53 ---
+output "route53_zone_id" {
+  description = "Route53 Hosted Zone ID"
+  value       = module.route53.zone_id
+}
+
+output "route53_name_servers" {
+  description = "Route53 Name Servers (도메인 등록기관 NS 설정 확인용)"
+  value       = module.route53.name_servers
+}
+
+# --- ACM ---
+output "acm_certificate_arn" {
+  description = "ACM SSL 인증서 ARN (us-east-1)"
+  value       = module.acm.certificate_arn
+}
+
 # --- EKS 콘솔 생성 시 필요한 정보 요약 ---
 output "eks_console_info" {
   description = "AWS Console에서 EKS 생성 시 필요한 정보"

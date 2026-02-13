@@ -33,6 +33,20 @@ provider "aws" {
   }
 }
 
+# CloudFront WAF는 us-east-1에서만 생성 가능
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "terraform"
+    }
+  }
+}
+
 locals {
   common_tags = {
     Project     = var.project_name
@@ -98,4 +112,139 @@ module "rds" {
   # master_password는 random_password로 자동 생성 → ASM에 보관
   instance_class     = "db.t3.medium"
   common_tags        = local.common_tags
+}
+
+# ------------------------------------------------------------------------------
+# WAF Module (CloudFront용 - us-east-1)
+# ------------------------------------------------------------------------------
+module "waf" {
+  source = "./modules/waf"
+
+  providers = {
+    aws = aws.us_east_1
+  }
+
+  project_name = var.project_name
+  environment  = var.environment
+  common_tags  = local.common_tags
+}
+
+# ------------------------------------------------------------------------------
+# KMS Module (S3 + CloudFront 데이터 암호화)
+# ------------------------------------------------------------------------------
+module "kms" {
+  source = "./modules/kms"
+
+  project_name = var.project_name
+  key_alias    = "${var.project_name}-s3-key"
+  common_tags  = local.common_tags
+}
+
+# ------------------------------------------------------------------------------
+# S3 Module (정적 자산 버킷 - CloudFront 오리진, KMS 암호화)
+# ------------------------------------------------------------------------------
+module "s3" {
+  source = "./modules/s3"
+
+  project_name = var.project_name
+  environment  = var.environment
+  kms_key_arn  = module.kms.key_arn
+  common_tags  = local.common_tags
+}
+
+# ------------------------------------------------------------------------------
+# [Step 1] Route53 Module (Hosted Zone만 생성)
+# → ACM DNS 검증에 zone_id가 먼저 필요하므로 Zone만 분리
+# ------------------------------------------------------------------------------
+module "route53" {
+  source = "./modules/route53"
+
+  project_name = var.project_name
+  domain_name  = var.domain_name
+  common_tags  = local.common_tags
+}
+
+# ------------------------------------------------------------------------------
+# [Step 2] ACM Module (SSL 인증서 - us-east-1, CloudFront 필수)
+# → Route53 zone_id로 DNS 자동 검증
+# ------------------------------------------------------------------------------
+module "acm" {
+  source = "./modules/acm"
+
+  providers = {
+    aws = aws.us_east_1
+  }
+
+  project_name    = var.project_name
+  domain_name     = var.domain_name
+  route53_zone_id = module.route53.zone_id
+  common_tags     = local.common_tags
+}
+
+# ------------------------------------------------------------------------------
+# [Step 3] CloudFront Module (CDN + WAF + OAC + ACM)
+# → ACM 인증서 검증 완료 후 생성
+# ------------------------------------------------------------------------------
+module "cloudfront" {
+  source = "./modules/cloudfront"
+
+  project_name          = var.project_name
+  s3_bucket_domain_name = module.s3.bucket_regional_domain_name
+  waf_acl_id            = module.waf.web_acl_arn
+  domain_name           = var.domain_name
+  acm_certificate_arn   = module.acm.certificate_arn
+}
+
+# ------------------------------------------------------------------------------
+# [Step 4] S3 버킷 정책 (CloudFront OAC 허용)
+# ------------------------------------------------------------------------------
+resource "aws_s3_bucket_policy" "cloudfront_oac" {
+  bucket = module.s3.bucket_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontOAC"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${module.s3.bucket_arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = module.cloudfront.cloudfront_arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+# ------------------------------------------------------------------------------
+# [Step 5] Route53 DNS 레코드 (CloudFront 생성 후 연결)
+# → 순환참조 방지를 위해 root에서 직접 생성
+# ------------------------------------------------------------------------------
+
+# 루트 도메인 → CloudFront (clmakase.click → d1234.cloudfront.net)
+resource "aws_route53_record" "cloudfront" {
+  zone_id = module.route53.zone_id
+  name    = var.domain_name
+  type    = "A"
+
+  alias {
+    name                   = module.cloudfront.cloudfront_domain_name
+    zone_id                = module.cloudfront.cloudfront_hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+# www 서브도메인 → 루트 도메인 CNAME
+resource "aws_route53_record" "www" {
+  zone_id = module.route53.zone_id
+  name    = "www.${var.domain_name}"
+  type    = "CNAME"
+  ttl     = 300
+  records = [var.domain_name]
 }
