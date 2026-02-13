@@ -4,6 +4,8 @@ import com.oliveyoung.sale.domain.Product;
 import com.oliveyoung.sale.dto.ProductResponse;
 import com.oliveyoung.sale.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,8 +36,19 @@ public class ProductService {
     private final SaleStateService saleStateService;
 
     /**
-     * 전체 상품 목록 조회
+     * 전체 상품 목록 조회 (ElastiCache 캐시 적용)
+     *
+     * [캐시 전략]
+     * - 캐시 키: products::all
+     * - TTL: 60초 (CacheConfig에서 설정)
+     * - Cache Hit: Redis에서 즉시 반환 (< 1ms)
+     * - Cache Miss: DB 조회 → Redis 저장 → 반환
+     *
+     * [무효화 시점]
+     * - 세일 시작/종료 시 (가격 변동) → SaleStateService에서 @CacheEvict
+     * - 재고 변경 시 → decreaseStock()에서 @CacheEvict
      */
+    @Cacheable(value = "products", key = "'all'")
     public List<ProductResponse> getAllProducts() {
         boolean isSaleActive = saleStateService.isSaleActive();
         return productRepository.findAll().stream()
@@ -44,8 +57,9 @@ public class ProductService {
     }
 
     /**
-     * 상품 상세 조회
+     * 상품 상세 조회 (ElastiCache 캐시 적용)
      */
+    @Cacheable(value = "product", key = "#id")
     public ProductResponse getProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + id));
@@ -55,9 +69,10 @@ public class ProductService {
     }
 
     /**
-     * 재고 차감 (비관적 락 사용)
+     * 재고 차감 (비관적 락 사용 + 캐시 무효화)
      */
     @Transactional
+    @CacheEvict(value = {"products", "product"}, allEntries = true)
     public void decreaseStock(Long productId, int quantity) {
         Product product = productRepository.findByIdWithLock(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다: " + productId));

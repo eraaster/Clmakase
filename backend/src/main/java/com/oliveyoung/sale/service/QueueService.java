@@ -1,5 +1,6 @@
 package com.oliveyoung.sale.service;
 
+import com.oliveyoung.sale.dto.QueueEntryMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -38,9 +39,16 @@ public class QueueService {
     private static final int BATCH_SIZE = 10; // 한 번에 처리할 수
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final KafkaProducerService kafkaProducerService;
 
     /**
-     * 대기열 진입
+     * 대기열 진입 (Kafka를 통한 비동기 처리)
+     *
+     * [변경 전] 사용자 → Redis ZADD (직접)
+     * [변경 후] 사용자 → Kafka Produce → Consumer → Redis ZADD
+     *
+     * Kafka가 버퍼 역할을 하여 트래픽 폭증 시 시스템을 보호합니다.
+     * 토큰은 즉시 발급하고, 실제 Redis 등록은 Consumer가 비동기로 처리합니다.
      *
      * @param sessionId 사용자 세션 ID
      * @return 대기열 토큰 (대기열 이탈 및 상태 조회용)
@@ -56,19 +64,18 @@ public class QueueService {
 
         // 대기열 토큰 생성
         String token = UUID.randomUUID().toString();
-        String queueValue = sessionId + ":" + productId + ":" + token;
+        long timestamp = System.currentTimeMillis();
 
-        // Sorted Set에 추가 (score = 현재 시간)
-        double score = System.currentTimeMillis();
-        zSetOps.add(QUEUE_KEY, queueValue, score);
+        // Kafka에 대기열 진입 메시지 발행 (비동기)
+        QueueEntryMessage message = new QueueEntryMessage(sessionId, productId, token, timestamp);
+        kafkaProducerService.sendQueueEntry(message);
 
-        // 현재 순위 조회
-        Long rank = zSetOps.rank(QUEUE_KEY, queueValue);
-        int position = (rank != null) ? rank.intValue() + 1 : 1;
+        // 현재 대기열 크기 기반 예상 순위 (정확한 순위는 Consumer 처리 후 조회)
+        int estimatedPosition = (queueSize != null) ? queueSize.intValue() + 1 : 1;
 
-        log.info("대기열 진입 - sessionId: {}, position: {}", sessionId, position);
+        log.info("대기열 진입 요청 (Kafka) - sessionId: {}, estimatedPosition: {}", sessionId, estimatedPosition);
 
-        return new QueueEntry(token, position, estimateWaitTime(position));
+        return new QueueEntry(token, estimatedPosition, estimateWaitTime(estimatedPosition));
     }
 
     /**

@@ -2,6 +2,7 @@ package com.oliveyoung.sale.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -30,19 +31,24 @@ public class SaleStateService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     /**
-     * 세일 시작
+     * 세일 시작 (+ 상품 캐시 무효화)
+     *
+     * 세일 시작 시 할인가가 변경되므로 캐시된 상품 정보를 모두 삭제.
+     * 다음 조회 시 DB에서 최신 데이터 + 할인가로 캐시 재생성.
      */
+    @CacheEvict(value = {"products", "product"}, allEntries = true)
     public void startSale() {
         redisTemplate.opsForValue().set(SALE_STATE_KEY, true);
-        log.info("🎉 세일이 시작되었습니다!");
+        log.info("세일이 시작되었습니다! (상품 캐시 초기화)");
     }
 
     /**
-     * 세일 종료
+     * 세일 종료 (+ 상품 캐시 무효화)
      */
+    @CacheEvict(value = {"products", "product"}, allEntries = true)
     public void endSale() {
         redisTemplate.opsForValue().set(SALE_STATE_KEY, false);
-        log.info("세일이 종료되었습니다.");
+        log.info("세일이 종료되었습니다. (상품 캐시 초기화)");
     }
 
     /**
